@@ -44,7 +44,7 @@ public class Items implements ContentList{
 
         titanium = new Item("titanium", Color.valueOf("8da1e3")){{
             hardness = 3;
-            cost = 1.01f;
+            cost = 1f;
         }};
 
         thorium = new Item("thorium", Color.valueOf("f9a3c7")){{

@@ -1240,7 +1240,7 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
     public boolean collision(Bullet other){
         damage(other.team, other.damage() * other.type().buildingDamageMultiplier);
 
-        return true;
+        return other.team != team || damaged() && other.type.healPercent > 0 && enableHealSelf;
     }
 
     /** Used to handle damage from splash damage for certain types of blocks. */

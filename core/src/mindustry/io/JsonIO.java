@@ -8,13 +8,15 @@ import mindustry.ctype.*;
 import mindustry.game.*;
 import mindustry.type.*;
 import mindustry.world.*;
+import mindustry.world.meta.*;
 
 import java.io.*;
 
 @SuppressWarnings("unchecked")
 public class JsonIO{
-    private static CustomJson jsonBase = new CustomJson();
-    private static Json json = new Json(){
+    private static final CustomJson jsonBase = new CustomJson();
+
+    public static final Json json = new Json(){
         { apply(this); }
 
         @Override
@@ -38,10 +40,6 @@ public class JsonIO{
             return super.convertToString(object);
         }
     };
-
-    public static Json json(){
-        return json;
-    }
 
     public static String write(Object object){
         return json.toJson(object, object.getClass());
@@ -69,11 +67,8 @@ public class JsonIO{
     }
 
     static void apply(Json json){
-        json.setIgnoreUnknownFields(true);
         json.setElementType(Rules.class, "spawns", SpawnGroup.class);
         json.setElementType(Rules.class, "loadout", ItemStack.class);
-
-        //TODO this is terrible
 
         json.setSerializer(Sector.class, new Serializer<>(){
             @Override
@@ -112,6 +107,18 @@ public class JsonIO{
                 if(jsonData.asString() == null) return Liquids.water;
                 Liquid i = Vars.content.getByName(ContentType.liquid, jsonData.asString());
                 return i == null ? Liquids.water : i;
+            }
+        });
+
+        json.setSerializer(Attribute.class, new Serializer<>(){
+            @Override
+            public void write(Json json, Attribute object, Class knownType){
+                json.writeValue(object.name);
+            }
+
+            @Override
+            public Attribute read(Json json, JsonValue jsonData, Class type){
+                return Attribute.get(jsonData.asString());
             }
         });
 
@@ -196,11 +203,12 @@ public class JsonIO{
         json.setSerializer(UnlockableContent.class, new Serializer<>(){
             @Override
             public void write(Json json, UnlockableContent object, Class knownType){
-                json.writeValue(object.name);
+                json.writeValue(object == null ? null : object.name);
             }
 
             @Override
             public UnlockableContent read(Json json, JsonValue jsonData, Class type){
+                if(jsonData.isNull()) return null;
                 String str = jsonData.asString();
                 Item item = Vars.content.getByName(ContentType.item, str);
                 Liquid liquid = Vars.content.getByName(ContentType.liquid, str);
@@ -212,9 +220,7 @@ public class JsonIO{
     static class CustomJson extends Json{
         private Object baseObject;
 
-        {
-            apply(this);
-        }
+        { apply(this); }
 
         @Override
         public <T> T fromJson(Class<T> type, String json){

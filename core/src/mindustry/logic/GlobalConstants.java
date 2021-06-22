@@ -1,14 +1,18 @@
 package mindustry.logic;
 
 import arc.struct.*;
+import arc.util.*;
 import mindustry.*;
 import mindustry.content.*;
+import mindustry.entities.units.*;
 import mindustry.logic.LExecutor.*;
 import mindustry.type.*;
 import mindustry.world.*;
 
 /** Stores global constants for logic processors. */
 public class GlobalConstants{
+    public static final int ctrlProcessor = 1, ctrlPlayer = 2, ctrlFormation = 3;
+
     private ObjectIntMap<String> namesToIds = new ObjectIntMap<>();
     private Seq<Var> vars = new Seq<>(Var.class);
 
@@ -18,6 +22,12 @@ public class GlobalConstants{
         put("false", 0);
         put("true", 1);
         put("null", null);
+
+        //special enums
+
+        put("@ctrlProcessor", ctrlProcessor);
+        put("@ctrlPlayer", ctrlPlayer);
+        put("@ctrlFormation", ctrlFormation);
 
         //store base content
 
@@ -46,6 +56,10 @@ public class GlobalConstants{
         //store sensor constants
         for(LAccess sensor : LAccess.all){
             put("@" + sensor.name(), sensor);
+        }
+
+        for(UnitCommand cmd : UnitCommand.all){
+            put("@command" + Strings.capitalize(cmd.name()), cmd);
         }
     }
 

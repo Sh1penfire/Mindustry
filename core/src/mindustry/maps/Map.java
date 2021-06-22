@@ -62,7 +62,7 @@ public class Map implements Comparable<Map>, Publishable{
     }
 
     public int getHightScore(){
-        return Core.settings.getInt("hiscore" + file.nameWithoutExtension(), 0);
+        return Core.settings.getInt("hiscore" + file.nameWithoutExtension() + tags.get("steamid", ""), 0);
     }
 
     public Texture safeTexture(){
@@ -78,7 +78,7 @@ public class Map implements Comparable<Map>, Publishable{
     }
 
     public void setHighScore(int score){
-        Core.settings.put("hiscore" + file.nameWithoutExtension(), score);
+        Core.settings.put("hiscore" + file.nameWithoutExtension() + tags.get("steamid", ""), score);
     }
 
     /** Returns the result of applying this map's rules to the specified gamemode.*/
@@ -147,7 +147,7 @@ public class Map implements Comparable<Map>, Publishable{
     public void addSteamID(String id){
         tags.put("steamid", id);
 
-        ui.editor.editor.tags.put("steamid", id);
+        editor.tags.put("steamid", id);
         try{
             ui.editor.save();
         }catch(Exception e){
@@ -160,7 +160,7 @@ public class Map implements Comparable<Map>, Publishable{
     public void removeSteamID(){
         tags.remove("steamid");
 
-        ui.editor.editor.tags.remove("steamid");
+        editor.tags.remove("steamid");
         try{
             ui.editor.save();
         }catch(Exception e){
@@ -204,7 +204,7 @@ public class Map implements Comparable<Map>, Publishable{
     @Override
     public boolean prePublish(){
         tags.put("author", player.name);
-        ui.editor.editor.tags.put("author", tags.get("author"));
+        editor.tags.put("author", tags.get("author"));
         ui.editor.save();
 
         return true;

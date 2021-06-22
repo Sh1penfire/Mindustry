@@ -22,10 +22,16 @@ public enum BlockFlag{
     resupply,
     /** Any reactor block. */
     reactor,
-    /** Any block that boosts unit capacity. */
+    /** This flag is unused, and will be removed. */
+    @Deprecated
     unitModifier,
     /** Blocks that extinguishes fires. */
-    extinguisher;
+    extinguisher,
+    /** Just a launch pad. */
+    launchPad;
 
     public final static BlockFlag[] all = values();
+
+    /** Values for logic only. Filters out some internal flags. */
+    public final static BlockFlag[] allLogic = {core, storage, generator, turret, factory, repair, rally, battery, resupply, reactor};
 }

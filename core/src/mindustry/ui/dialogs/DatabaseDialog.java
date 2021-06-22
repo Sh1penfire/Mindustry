@@ -56,13 +56,13 @@ public class DatabaseDialog extends BaseDialog{
                 for(int i = 0; i < array.size; i++){
                     UnlockableContent unlock = (UnlockableContent)array.get(i);
 
-                    Image image = unlocked(unlock) ? new Image(unlock.icon(Cicon.medium)).setScaling(Scaling.fit) : new Image(Icon.lock, Pal.gray);
+                    Image image = unlocked(unlock) ? new Image(unlock.uiIcon).setScaling(Scaling.fit) : new Image(Icon.lock, Pal.gray);
                     list.add(image).size(8 * 4).pad(3);
                     ClickListener listener = new ClickListener();
                     image.addListener(listener);
-                    if(!Vars.mobile && unlocked(unlock)){
+                    if(!mobile && unlocked(unlock)){
                         image.addListener(new HandCursorListener());
-                        image.update(() -> image.color.lerp(!listener.isOver() ? Color.lightGray : Color.white, 0.4f * Time.delta));
+                        image.update(() -> image.color.lerp(!listener.isOver() ? Color.lightGray : Color.white, Mathf.clamp(0.4f * Time.delta)));
                     }
 
                     if(unlocked(unlock)){
@@ -71,7 +71,7 @@ public class DatabaseDialog extends BaseDialog{
                                 Core.app.setClipboardText((char)Fonts.getUnicode(unlock.name) + "");
                                 ui.showInfoFade("@copied");
                             }else{
-                                Vars.ui.content.show(unlock);
+                                ui.content.show(unlock);
                             }
                         });
                         image.addListener(new Tooltip(t -> t.background(Tex.button).add(unlock.localizedName)));

@@ -66,7 +66,7 @@ public class ServerControl implements ApplicationListener{
             "bans", "",
             "admins", "",
             "shufflemode", "custom",
-            "globalrules", "{reactorExplosions: false}"
+            "globalrules", "{reactorExplosions: false, logicUnitBuild: false}"
         );
 
         //update log level
@@ -238,8 +238,8 @@ public class ServerControl implements ApplicationListener{
         Events.on(PlayEvent.class, e -> {
 
             try{
-                JsonValue value = JsonIO.json().fromJson(null, Core.settings.getString("globalrules"));
-                JsonIO.json().readFields(state.rules, value);
+                JsonValue value = JsonIO.json.fromJson(null, Core.settings.getString("globalrules"));
+                JsonIO.json.readFields(state.rules, value);
             }catch(Throwable t){
                 err("Error applying custom rules, proceeding without them.", t);
             }
@@ -339,7 +339,11 @@ public class ServerControl implements ApplicationListener{
             if(!maps.all().isEmpty()){
                 info("Maps:");
                 for(Map map : maps.all()){
-                    info("  @: &fi@ / @x@", map.name(), map.custom ? "Custom" : "Default", map.width, map.height);
+                    if(map.custom){
+                        info("  @ (@): &fiCustom / @x@", map.name().replace(' ', '_'), map.file.name(), map.width, map.height);
+                    }else{
+                        info("  @: &fiDefault / @x@", map.name().replace(' ', '_'), map.width, map.height);
+                    }
                 }
             }else{
                 info("No maps found.");
@@ -433,7 +437,7 @@ public class ServerControl implements ApplicationListener{
 
         handler.register("rules", "[remove/add] [name] [value...]", "List, remove or add global rules. These will apply regardless of map.", arg -> {
             String rules = Core.settings.getString("globalrules");
-            JsonValue base = JsonIO.json().fromJson(null, rules);
+            JsonValue base = JsonIO.json.fromJson(null, rules);
 
             if(arg.length == 0){
                 info("Rules:\n@", JsonIO.print(rules));
@@ -467,7 +471,7 @@ public class ServerControl implements ApplicationListener{
                         JsonValue parent = new JsonValue(ValueType.object);
                         parent.addChild(value);
 
-                        JsonIO.json().readField(state.rules, value.name, parent);
+                        JsonIO.json.readField(state.rules, value.name, parent);
                         if(base.has(value.name)){
                             base.remove(value.name);
                         }
@@ -502,7 +506,7 @@ public class ServerControl implements ApplicationListener{
             }
 
             for(Item item : content.items()){
-                state.teams.cores(team).first().items.set(item, state.teams.cores(team).first().block.itemCapacity);
+                state.teams.cores(team).first().items.set(item, state.teams.cores(team).first().storageCapacity);
             }
 
             info("Core filled.");
@@ -554,7 +558,7 @@ public class ServerControl implements ApplicationListener{
                             return;
                         }
                     }else if(c.isString()){
-                        c.set(arg[1]);
+                        c.set(arg[1].replace("\\n", "\n"));
                     }
 
                     info("@ set to @.", c.name(), c.get());
@@ -1045,7 +1049,7 @@ public class ServerControl implements ApplicationListener{
                 }catch(BindException b){
                     err("Command input socket already in use. Is another instance of the server running?");
                 }catch(IOException e){
-                    if(!e.getMessage().equals("Socket closed")){
+                    if(!e.getMessage().equals("Socket closed") && !e.getMessage().equals("Connection reset")){
                         err("Terminating socket server.");
                         err(e);
                     }

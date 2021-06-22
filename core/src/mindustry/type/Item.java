@@ -13,10 +13,12 @@ public class Item extends UnlockableContent{
 
     /** how explosive this item is. */
     public float explosiveness = 0f;
-    /** flammability above 0.3 makes this eleigible for item burners. */
+    /** flammability above 0.3 makes this eligible for item burners. */
     public float flammability = 0f;
-    /** how radioactive this item is. 0=none, 1=chernobyl ground zero */
+    /** how radioactive this item is. */
     public float radioactivity;
+    /** how electrically potent this item is. */
+    public float charge = 0f;
     /** drill hardness of the item */
     public int hardness = 0;
     /**
@@ -41,6 +43,7 @@ public class Item extends UnlockableContent{
         stats.addPercent(Stat.explosiveness, explosiveness);
         stats.addPercent(Stat.flammability, flammability);
         stats.addPercent(Stat.radioactivity, radioactivity);
+        stats.addPercent(Stat.charge, charge);
     }
 
     @Override
@@ -55,6 +58,6 @@ public class Item extends UnlockableContent{
 
     /** Allocates a new array containing all items that generate ores. */
     public static Seq<Item> getAllOres(){
-        return content.blocks().select(b -> b instanceof OreBlock).map(b -> ((Floor)b).itemDrop);
+        return content.blocks().select(b -> b instanceof OreBlock).map(b -> b.itemDrop);
     }
 }

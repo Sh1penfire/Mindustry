@@ -17,15 +17,18 @@ public class SapBulletType extends BulletType{
     public float width = 0.4f;
 
     public SapBulletType(){
-        speed = 0.0001f;
+        speed = 0f;
         despawnEffect = Fx.none;
-        pierce = false;
+        pierce = true;
         collides = false;
         hitSize = 0f;
         hittable = false;
         hitEffect = Fx.hitLiquid;
         status = StatusEffects.sapped;
+        lightColor = Pal.sap;
+        lightOpacity = 0.6f;
         statusDuration = 60f * 3f;
+        impact = true;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class SapBulletType extends BulletType{
 
             Draw.reset();
 
-            Drawf.light(b.team, b.x, b.y, Tmp.v1.x, Tmp.v1.y, 15f * b.fout(), lightColor, 0.6f);
+            Drawf.light(b.team, b.x, b.y, Tmp.v1.x, Tmp.v1.y, 15f * b.fout(), lightColor, lightOpacity);
         }
     }
 
@@ -50,7 +53,7 @@ public class SapBulletType extends BulletType{
 
     @Override
     public float range(){
-        return length;
+        return Math.max(length, maxRange);
     }
 
     @Override

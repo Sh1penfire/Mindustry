@@ -10,6 +10,8 @@ import mindustry.io.*;
 import mindustry.type.*;
 import mindustry.type.Weather.*;
 import mindustry.world.*;
+import mindustry.world.blocks.*;
+import mindustry.world.meta.*;
 
 /**
  * Defines current rules on how the game should function.
@@ -34,6 +36,8 @@ public class Rules{
     public boolean editor = false;
     /** Whether a gameover can happen at all. Set this to false to implement custom gameover conditions. */
     public boolean canGameOver = true;
+    /** Whether cores change teams when they are destroyed. */
+    public boolean coreCapture = false;
     /** Whether reactors can explode and damage other blocks. */
     public boolean reactorExplosions = true;
     /** Whether schematics are allowed. */
@@ -44,12 +48,14 @@ public class Rules{
     public boolean fire = true;
     /** Whether units use and require ammo. */
     public boolean unitAmmo = false;
+    /** Whether cores add to unit limit */
+    public boolean unitCapVariable = true;
     /** How fast unit pads build units. */
     public float unitBuildSpeedMultiplier = 1f;
-    /** How much health units start with. */
-    public float unitHealthMultiplier = 1f;
     /** How much damage any other units deal. */
     public float unitDamageMultiplier = 1f;
+    /** Whether to allow units to build with logic. */
+    public boolean logicUnitBuild = true;
     /** How much health blocks start with. */
     public float blockHealthMultiplier = 1f;
     /** How much damage blocks (turrets) deal. */
@@ -62,14 +68,20 @@ public class Rules{
     public float deconstructRefundMultiplier = 0.5f;
     /** No-build zone around enemy core radius. */
     public float enemyCoreBuildRadius = 400f;
+    /** If true, no-build zones are calculated based on the closest core. */
+    public boolean polygonCoreProtection = false;
     /** Radius around enemy wave drop zones.*/
     public float dropZoneRadius = 300f;
     /** Time between waves in ticks. */
-    public float waveSpacing = 60 * 60 * 2;
+    public float waveSpacing = 2 * Time.toMinutes;
     /** Wave after which the player 'wins'. Used in sectors. Use a value <= 0 to disable. */
     public int winWave = 0;
     /** Base unit cap. Can still be increased by blocks. */
     public int unitCap = 0;
+    /** Environmental flags that dictate visuals & how blocks function. */
+    public int environment = Env.terrestrial | Env.spores | Env.groundOil | Env.groundWater;
+    /** Attributes of the environment. */
+    public Attributes attributes = new Attributes();
     /** Sector for saves that have them. */
     public @Nullable Sector sector;
     /** Spawn layout. */
@@ -97,6 +109,8 @@ public class Rules{
     public Team waveTeam = Team.crux;
     /** name of the custom mode that this ruleset describes, or null. */
     public @Nullable String modeName;
+    /** Whether cores incinerate items when full, just like in the campaign. */
+    public boolean coreIncinerates = false;
     /** special tags for additional info. */
     public StringMap tags = new StringMap();
 
@@ -137,7 +151,7 @@ public class Rules{
     }
 
     /** A simple map for storing TeamRules in an efficient way without hashing. */
-    public static class TeamRules implements Serializable{
+    public static class TeamRules implements JsonSerializable{
         final TeamRule[] values = new TeamRule[Team.all.length];
 
         public TeamRule get(Team team){

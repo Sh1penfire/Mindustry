@@ -50,9 +50,7 @@ public class JoinDialog extends BaseDialog{
         addCloseButton();
 
         buttons.add().growX().width(-1);
-        if(!steam){
-            buttons.button("?", () -> ui.showInfo("@join.info")).size(60f, 64f).width(-1);
-        }
+        if(!steam) buttons.button("?", () -> ui.showInfo("@join.info")).size(60f, 64f);
 
         add = new BaseDialog("@joingame.title");
         add.cont.add("@joingame.ip").padRight(5f).left();
@@ -97,8 +95,12 @@ public class JoinDialog extends BaseDialog{
         });
 
         onResize(() -> {
-            setup();
-            refreshAll();
+            //only refresh on resize when the minimum dimension is smaller than the maximum preferred width
+            //this means that refreshes on resize will only happen for small phones that need the list to fit in portrait mode
+            if(Math.min(Core.graphics.getWidth(), Core.graphics.getHeight()) / Scl.scl() * 0.9f < 500f){
+                setup();
+                refreshAll();
+            }
         });
     }
 
@@ -362,7 +364,7 @@ public class JoinDialog extends BaseDialog{
             for(String address : group.addresses){
                 String resaddress = address.contains(":") ? address.split(":")[0] : address;
                 int resport = address.contains(":") ? Strings.parseInt(address.split(":")[1]) : port;
-                net.pingHost(resaddress, resport, res -> {
+                net.pingHostThread(resaddress, resport, res -> {
                     if(refreshes != cur) return;
                     res.port = resport;
 
@@ -402,6 +404,7 @@ public class JoinDialog extends BaseDialog{
         global.background(null);
         float w = targetWidth();
 
+        //TODO looks bad
         container.button(b -> buildServer(host, b), Styles.cleart, () -> {
             Events.fire(new ClientPreConnectEvent(host));
             if(!Core.settings.getBool("server-disclaimer", false)){
@@ -463,8 +466,10 @@ public class JoinDialog extends BaseDialog{
             net.reset();
             Vars.netClient.beginConnecting();
             net.connect(lastIp = ip, lastPort = port, () -> {
-                hide();
-                add.hide();
+                if(net.client()){
+                    hide();
+                    add.hide();
+                }
             });
         });
     }
@@ -513,7 +518,7 @@ public class JoinDialog extends BaseDialog{
             Core.settings.remove("server-list");
         }
 
-        var url = becontrol.active() ? serverJsonBeURL : serverJsonV6URL;
+        var url = becontrol.active() ? serverJsonBeURL : serverJsonURL;
         Log.info("Fetching community servers at @", url);
 
         //get servers
@@ -563,25 +568,32 @@ public class JoinDialog extends BaseDialog{
         transient Host lastHost;
 
         void setIP(String ip){
-
-            //parse ip:port, if unsuccessful, use default values
-            if(ip.lastIndexOf(':') != -1 && ip.lastIndexOf(':') != ip.length() - 1){
-                try{
+            try{
+                boolean isIpv6 = Strings.count(ip, ':') > 1;
+                if(isIpv6 && ip.lastIndexOf("]:") != -1 && ip.lastIndexOf("]:") != ip.length() - 1){
+                    int idx = ip.indexOf("]:");
+                    this.ip = ip.substring(1, idx);
+                    this.port = Integer.parseInt(ip.substring(idx + 2));
+                }else if(!isIpv6 && ip.lastIndexOf(':') != -1 && ip.lastIndexOf(':') != ip.length() - 1){
                     int idx = ip.lastIndexOf(':');
                     this.ip = ip.substring(0, idx);
                     this.port = Integer.parseInt(ip.substring(idx + 1));
-                }catch(Exception e){
+                }else{
                     this.ip = ip;
                     this.port = Vars.port;
                 }
-            }else{
+            }catch(Exception e){
                 this.ip = ip;
                 this.port = Vars.port;
             }
         }
 
         String displayIP(){
-            return ip + (port != Vars.port ? ":" + port : "");
+            if(Strings.count(ip, ':') > 1){
+                return port != Vars.port ? "[" + ip + "]:" + port : ip;
+            }else{
+                return ip + (port != Vars.port ? ":" + port : "");
+            }
         }
 
         public Server(){

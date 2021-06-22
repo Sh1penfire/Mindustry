@@ -15,7 +15,7 @@ import static mindustry.Vars.*;
 
 public class AIController implements UnitController{
     protected static final Vec2 vec = new Vec2();
-    protected static final int timerTarget = 0, timerTarget2 = 1, timerTarget3 = 2;
+    protected static final int timerTarget = 0, timerTarget2 = 1, timerTarget3 = 2, timerTarget4 = 3;
 
     protected Unit unit;
     protected Interval timer = new Interval(4);
@@ -23,8 +23,6 @@ public class AIController implements UnitController{
 
     /** main target that is being faced */
     protected Teamc target;
-    /** targets for each weapon */
-    protected Teamc[] targets = {};
 
     {
         timer.reset(0, Mathf.random(40f));
@@ -88,14 +86,12 @@ public class AIController implements UnitController{
         if(tile == null) return;
         Tile targetTile = pathfinder.getTargetTile(tile, pathfinder.getField(unit.team, costType, pathTarget));
 
-        if(tile == targetTile || (costType == Pathfinder.costWater && !targetTile.floor().isLiquid)) return;
+        if(tile == targetTile || (costType == Pathfinder.costNaval && !targetTile.floor().isLiquid)) return;
 
-        unit.moveAt(vec.trns(unit.angleTo(targetTile), unit.speed()));
+        unit.moveAt(vec.trns(unit.angleTo(targetTile.worldx(), targetTile.worldy()), unit.speed()));
     }
 
     protected void updateWeapons(){
-        if(targets.length != unit.mounts.length) targets = new Teamc[unit.mounts.length];
-
         float rotation = unit.rotation - 90;
         boolean ret = retarget();
 
@@ -109,44 +105,48 @@ public class AIController implements UnitController{
 
         unit.isShooting = false;
 
-        for(int i = 0; i < targets.length; i++){
-            WeaponMount mount = unit.mounts[i];
+        for(var mount : unit.mounts){
             Weapon weapon = mount.weapon;
+
+            //let uncontrollable weapons do their own thing
+            if(!weapon.controllable) continue;
 
             float mountX = unit.x + Angles.trnsx(rotation, weapon.x, weapon.y),
                 mountY = unit.y + Angles.trnsy(rotation, weapon.x, weapon.y);
 
             if(unit.type.singleTarget){
-                targets[i] = target;
+                mount.target = target;
             }else{
                 if(ret){
-                    targets[i] = findTarget(mountX, mountY, weapon.bullet.range(), weapon.bullet.collidesAir, weapon.bullet.collidesGround);
+                    mount.target = findTarget(mountX, mountY, weapon.bullet.range(), weapon.bullet.collidesAir, weapon.bullet.collidesGround);
                 }
 
-                if(Units.invalidateTarget(targets[i], unit.team, mountX, mountY, weapon.bullet.range())){
-                    targets[i] = null;
+                if(checkTarget(mount.target, mountX, mountY, weapon.bullet.range())){
+                    mount.target = null;
                 }
             }
 
             boolean shoot = false;
 
-            if(targets[i] != null){
-                shoot = targets[i].within(mountX, mountY, weapon.bullet.range()) && shouldShoot();
+            if(mount.target != null){
+                shoot = mount.target.within(mountX, mountY, weapon.bullet.range() + (mount.target instanceof Sized s ? s.hitSize()/2f : 0f)) && shouldShoot();
 
-                Vec2 to = Predict.intercept(unit, targets[i], weapon.bullet.speed);
+                Vec2 to = Predict.intercept(unit, mount.target, weapon.bullet.speed);
                 mount.aimX = to.x;
                 mount.aimY = to.y;
             }
 
-            mount.shoot = shoot;
-            mount.rotate = shoot;
+            unit.isShooting |= (mount.shoot = mount.rotate = shoot);
 
-            unit.isShooting |= shoot;
             if(shoot){
                 unit.aimX = mount.aimX;
                 unit.aimY = mount.aimY;
             }
         }
+    }
+
+    protected boolean checkTarget(Teamc target, float x, float y, float range){
+        return Units.invalidateTarget(target, unit.team, x, y, range);
     }
 
     protected boolean shouldShoot(){
@@ -163,7 +163,7 @@ public class AIController implements UnitController{
     }
 
     protected boolean retarget(){
-        return timer.get(timerTarget, 40);
+        return timer.get(timerTarget, target == null ? 40 : 90);
     }
 
     protected Teamc findTarget(float x, float y, float range, boolean air, boolean ground){

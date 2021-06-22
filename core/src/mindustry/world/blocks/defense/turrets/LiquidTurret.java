@@ -3,6 +3,7 @@ package mindustry.world.blocks.defense.turrets;
 import arc.graphics.g2d.*;
 import arc.struct.*;
 import mindustry.annotations.Annotations.*;
+import mindustry.content.*;
 import mindustry.entities.*;
 import mindustry.entities.bullet.*;
 import mindustry.gen.*;
@@ -11,7 +12,6 @@ import mindustry.type.*;
 import mindustry.world.*;
 import mindustry.world.consumers.*;
 import mindustry.world.meta.*;
-import mindustry.world.meta.values.*;
 
 import static mindustry.Vars.*;
 
@@ -27,18 +27,21 @@ public class LiquidTurret extends Turret{
         hasLiquids = true;
         loopSound = Sounds.spray;
         shootSound = Sounds.none;
+        smokeEffect = Fx.none;
+        shootEffect = Fx.none;
+        outlinedIcon = 1;
     }
 
     /** Initializes accepted ammo map. Format: [liquid1, bullet1, liquid2, bullet2...] */
-    protected void ammo(Object... objects){
-        ammoTypes = OrderedMap.of(objects);
+    public void ammo(Object... objects){
+        ammoTypes = ObjectMap.of(objects);
     }
 
     @Override
     public void setStats(){
         super.setStats();
 
-        stats.add(Stat.ammo, new AmmoListValue<>(ammoTypes));
+        stats.add(Stat.ammo, StatValues.ammo(ammoTypes));
     }
 
     @Override
@@ -63,6 +66,12 @@ public class LiquidTurret extends Turret{
         super.init();
     }
 
+    @Override
+    public TextureRegion[] icons(){
+        if(topRegion.found()) return new TextureRegion[]{baseRegion, region, topRegion};
+        return super.icons();
+    }
+
     public class LiquidTurretBuild extends TurretBuild{
         @Override
         public void draw(){
@@ -81,7 +90,9 @@ public class LiquidTurret extends Turret{
 
         @Override
         public void updateTile(){
-            unit.ammo(unit.type().ammoCapacity * liquids.currentAmount() / liquidCapacity);
+            if(unit != null){
+                unit.ammo(unit.type().ammoCapacity * liquids.currentAmount() / liquidCapacity);
+            }
 
             super.updateTile();
         }
@@ -109,8 +120,11 @@ public class LiquidTurret extends Turret{
         protected void effects(){
             BulletType type = peekAmmo();
 
-            type.shootEffect.at(x + tr.x, y + tr.y, rotation, liquids.current().color);
-            type.smokeEffect.at(x + tr.x, y + tr.y, rotation, liquids.current().color);
+            Effect fshootEffect = shootEffect == Fx.none ? type.shootEffect : shootEffect;
+            Effect fsmokeEffect = smokeEffect == Fx.none ? type.smokeEffect : smokeEffect;
+
+            fshootEffect.at(x + tr.x, y + tr.y, rotation, liquids.current().color);
+            fsmokeEffect.at(x + tr.x, y + tr.y, rotation, liquids.current().color);
             shootSound.at(tile);
 
             if(shootShake > 0){

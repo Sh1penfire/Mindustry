@@ -49,7 +49,7 @@ public class MapsDialog extends BaseDialog{
                 Runnable show = () -> ui.loadAnd(() -> {
                     hide();
                     ui.editor.show();
-                    ui.editor.editor.tags.put("name", text);
+                    editor.tags.put("name", text);
                     Events.fire(new MapMakeEvent());
                 });
 
@@ -71,7 +71,6 @@ public class MapsDialog extends BaseDialog{
                         }
 
                         Map map = MapIO.createMap(file, true);
-
 
                         //when you attempt to import a save, it will have no name, so generate one
                         String name = map.tags.get("name", () -> {

@@ -15,8 +15,6 @@ import mindustry.world.meta.*;
 import static mindustry.Vars.*;
 
 public class Wall extends Block{
-    public int variants = 0;
-
     /** Lighting chance. -1 to disable */
     public float lightningChance = -1f;
     public float lightningDamage = 20f;
@@ -37,6 +35,7 @@ public class Wall extends Block{
         group = BlockGroup.walls;
         buildCostMultiplier = 6f;
         canOverdrive = false;
+        drawDisabled = false;
     }
 
     @Override
@@ -51,20 +50,6 @@ public class Wall extends Block{
     }
 
     @Override
-    public void load(){
-        super.load();
-
-        if(variants != 0){
-            variantRegions = new TextureRegion[variants];
-
-            for(int i = 0; i < variants; i++){
-                variantRegions[i] = Core.atlas.find(name + (i + 1));
-            }
-            region = variantRegions[0];
-        }
-    }
-
-    @Override
     public TextureRegion[] icons(){
         return new TextureRegion[]{Core.atlas.find(Core.atlas.has(name) ? name : name + "1")};
     }
@@ -74,11 +59,7 @@ public class Wall extends Block{
 
         @Override
         public void draw(){
-            if(variants == 0){
-                Draw.rect(region, x, y);
-            }else{
-                Draw.rect(variantRegions[Mathf.randomSeed(tile.pos(), 0, Math.max(0, variantRegions.length - 1))], x, y);
-            }
+            super.draw();
 
             //draw flashing white overlay if enabled
             if(flashHit){

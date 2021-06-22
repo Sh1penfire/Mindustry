@@ -3,7 +3,6 @@ package mindustry.maps;
 import arc.math.*;
 import arc.math.geom.*;
 import arc.struct.*;
-import arc.util.*;
 import mindustry.ai.*;
 import mindustry.content.*;
 import mindustry.entities.*;
@@ -24,7 +23,7 @@ public class SectorDamage{
     public static final int maxRetWave = 40, maxWavesSimulated = 50;
 
     //direct damage is for testing only
-    private static final boolean direct = false, rubble = true;
+    private static final boolean rubble = true;
 
     /** @return calculated capture progress of the enemy */
     public static float getDamage(SectorInfo info){
@@ -186,7 +185,6 @@ public class SectorDamage{
 
         Tile start = spawns.first();
 
-        Time.mark();
         var field = pathfinder.getField(state.rules.waveTeam, Pathfinder.costGround, Pathfinder.fieldCore);
         Seq<Tile> path = new Seq<>();
         boolean found = false;
@@ -225,7 +223,6 @@ public class SectorDamage{
 
         //create sparse tile array for fast range query
         int sparseSkip = 5, sparseSkip2 = 3;
-        //TODO if this is slow, use a quadtree
         Seq<Tile> sparse = new Seq<>(path.size / sparseSkip + 1);
         Seq<Tile> sparse2 = new Seq<>(path.size / sparseSkip2 + 1);
 
@@ -246,7 +243,7 @@ public class SectorDamage{
         //first, calculate the total health of blocks in the path
 
         //radius around the path that gets counted
-        int radius = 7;
+        int radius = 5;
         IntSet counted = new IntSet();
 
         for(Tile t : sparse2){
@@ -274,7 +271,7 @@ public class SectorDamage{
         for(Building build : Groups.build){
             float e = build.efficiency();
             if(e > 0.08f){
-                if(build.team == state.rules.defaultTeam && build instanceof Ranged ranged && sparse.contains(t -> t.within(build, ranged.range() + radius*tilesize))){
+                if(build.team == state.rules.defaultTeam && build instanceof Ranged ranged && sparse.contains(t -> t.within(build, ranged.range() + 4*tilesize))){
                     if(build.block instanceof Turret t && build instanceof TurretBuild b && b.hasAmmo()){
                         sumDps += t.shots / t.reloadTime * 60f * b.peekAmmo().estimateDPS() * e;
                     }
@@ -363,13 +360,11 @@ public class SectorDamage{
         info.waveDpsBase = reg.intercept;
         info.waveDpsSlope = reg.slope;
 
-        //enemy units like to aim for a lot of non-essential things, so increase resulting health slightly
-        info.sumHealth = sumHealth * 1.05f;
-        //players tend to have longer range units/turrets, so assume DPS is higher
-        info.sumDps = sumDps * 1.05f;
+        info.sumHealth = sumHealth * 0.9f;
+        info.sumDps = sumDps;
         info.sumRps = sumRps;
 
-        float cmult = 1.5f;
+        float cmult = 1.6f;
 
         info.curEnemyDps = curEnemyDps*cmult;
         info.curEnemyHealth = curEnemyHealth*cmult;
@@ -487,23 +482,21 @@ public class SectorDamage{
                         if(other.build != null && other.team() != state.rules.waveTeam){
                             resultDamage -= other.build.health();
 
-                            if(direct){
-                                other.build.damage(currDamage);
-                            }else{ //indirect damage happens at game load time
-                                other.build.health -= currDamage;
-                                //don't kill the core!
-                                if(other.block() instanceof CoreBlock) other.build.health = Math.max(other.build.health, 1f);
+                            other.build.health -= currDamage;
+                            //don't kill the core!
+                            if(other.block() instanceof CoreBlock) other.build.health = Math.max(other.build.health, 1f);
 
-                                //remove the block when destroyed
-                                if(other.build.health < 0){
-                                    //rubble
-                                    if(rubble && !other.floor().solid && !other.floor().isLiquid && Mathf.chance(0.4)){
-                                        Effect.rubble(other.build.x, other.build.y, other.block().size);
-                                    }
-
-                                    other.build.addPlan(false);
-                                    other.remove();
+                            //remove the block when destroyed
+                            if(other.build.health < 0){
+                                //rubble
+                                if(rubble && !other.floor().solid && !other.floor().isLiquid && Mathf.chance(0.4)){
+                                    Effect.rubble(other.build.x, other.build.y, other.block().size);
                                 }
+
+                                other.build.addPlan(false);
+                                other.remove();
+                            }else{
+                                indexer.notifyTileDamaged(other.build);
                             }
 
                         }else if(other.solid() && !other.synthetic()){ //skip damage propagation through solid blocks
@@ -524,7 +517,7 @@ public class SectorDamage{
     static float cost(Tile tile){
         return 1f +
             (tile.block().isStatic() && tile.solid() ? 200f : 0f) +
-            (tile.build != null ? tile.build.health / 40f : 0f) +
+            (tile.build != null ? tile.build.health / (tile.build.block.size * tile.build.block.size) / 20f : 0f) +
             (tile.floor().isLiquid ? 10f : 0f);
     }
 }

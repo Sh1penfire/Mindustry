@@ -29,6 +29,7 @@ public class MessageBlock extends Block{
         solid = true;
         destructible = true;
         group = BlockGroup.logic;
+        drawDisabled = false;
 
         config(String.class, (MessageBuild tile, String text) -> {
             if(text.length() > maxTextLength){
@@ -43,8 +44,7 @@ public class MessageBlock extends Block{
             for(int i = 0; i < text.length(); i++){
                 char c = text.charAt(i);
                 if(c == '\n'){
-                    count ++;
-                    if(count <= maxNewlines){
+                    if(count++ <= maxNewlines){
                         tile.message.append('\n');
                     }
                 }else{

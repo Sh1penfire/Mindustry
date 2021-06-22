@@ -1,16 +1,16 @@
 package mindustry.world.blocks.payloads;
 
 import arc.graphics.g2d.*;
+import arc.math.geom.*;
 import arc.util.*;
 import arc.util.io.*;
 import mindustry.game.*;
 import mindustry.gen.*;
-import mindustry.ui.*;
 import mindustry.world.*;
 
 import static mindustry.Vars.*;
 
-public interface Payload{
+public interface Payload extends Position{
     int payloadUnit = 0, payloadBlock = 1;
 
     /** sets this payload's position on the map. */
@@ -22,6 +22,9 @@ public interface Payload{
     /** @return hitbox size of the payload. */
     float size();
 
+    float x();
+    float y();
+
     /** @return whether this payload was dumped. */
     default boolean dump(){
         return false;
@@ -32,11 +35,26 @@ public interface Payload{
         return size() / tilesize <= s;
     }
 
+    /** @return rotation of this payload. */
+    default float rotation(){
+        return 0f;
+    }
+
     /** writes the payload for saving. */
     void write(Writes write);
 
     /** @return icon describing the contents. */
-    TextureRegion icon(Cicon icon);
+    TextureRegion icon();
+
+    @Override
+    default float getX(){
+        return x();
+    }
+
+    @Override
+    default float getY(){
+        return y();
+    }
 
     static void write(@Nullable Payload payload, Writes write){
         if(payload == null){

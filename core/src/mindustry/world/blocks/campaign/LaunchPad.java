@@ -1,9 +1,9 @@
 package mindustry.world.blocks.campaign;
 
 import arc.*;
-import arc.audio.*;
 import arc.Graphics.*;
 import arc.Graphics.Cursor.*;
+import arc.audio.*;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
@@ -11,12 +11,14 @@ import arc.math.geom.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
+import arc.util.io.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.content.*;
 import mindustry.entities.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
+import mindustry.logic.*;
 import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.world.*;
@@ -26,13 +28,12 @@ import mindustry.world.meta.*;
 import static mindustry.Vars.*;
 
 public class LaunchPad extends Block{
-    public final int timerLaunch = timers++;
     /** Time inbetween launches. */
-    public float launchTime;
+    public float launchTime = 1f;
     public Sound launchSound = Sounds.none;
 
     public @Load("@-light") TextureRegion lightRegion;
-    public @Load("launchpod") TextureRegion podRegion;
+    public @Load(value = "@-pod", fallback = "launchpod") TextureRegion podRegion;
     public Color lightColor = Color.valueOf("eab678");
 
     public LaunchPad(String name){
@@ -42,6 +43,7 @@ public class LaunchPad extends Block{
         update = true;
         configurable = true;
         drawDisabled = false;
+        flags = EnumSet.of(BlockFlag.launchPad);
     }
 
     @Override
@@ -64,6 +66,7 @@ public class LaunchPad extends Block{
     }
 
     public class LaunchPadBuild extends Building{
+        public float launchCounter;
 
         @Override
         public Cursor getCursor(){
@@ -77,6 +80,17 @@ public class LaunchPad extends Block{
         }
 
         @Override
+        public boolean shouldConsume(){
+            return true;
+        }
+
+        @Override
+        public double sense(LAccess sensor){
+            if(sensor == LAccess.progress) return Mathf.clamp(launchCounter / launchTime);
+            return super.sense(sensor);
+        }
+
+        @Override
         public void draw(){
             super.draw();
 
@@ -84,7 +98,7 @@ public class LaunchPad extends Block{
 
             if(lightRegion.found()){
                 Draw.color(lightColor);
-                float progress = Math.min((float)items.total() / itemCapacity, timer.getTime(timerLaunch) / (launchTime / timeScale));
+                float progress = Math.min((float)items.total() / itemCapacity, launchCounter / launchTime);
                 int steps = 3;
                 float step = 1f;
 
@@ -101,7 +115,7 @@ public class LaunchPad extends Block{
                 Draw.reset();
             }
 
-            float cooldown = Mathf.clamp(timer.getTime(timerLaunch) / (90f / timeScale));
+            float cooldown = Mathf.clamp(launchCounter / (90f));
 
             Draw.mixcol(lightColor, 1f - cooldown);
 
@@ -120,7 +134,7 @@ public class LaunchPad extends Block{
             if(!state.isCampaign()) return;
 
             //launch when full and base conditions are met
-            if(items.total() >= itemCapacity && efficiency() >= 1f && timer(timerLaunch, launchTime / timeScale)){
+            if(items.total() >= itemCapacity && efficiency() >= 1f && (launchCounter += edelta()) >= launchTime){
                 launchSound.at(x, y);
                 LaunchPayload entity = LaunchPayload.create();
                 items.each((item, amount) -> entity.stacks.add(new ItemStack(item, amount)));
@@ -131,6 +145,7 @@ public class LaunchPad extends Block{
                 Fx.launchPod.at(this);
                 items.clear();
                 Effect.shake(3f, 3f, this);
+                launchCounter = 0f;
             }
         }
 
@@ -166,6 +181,25 @@ public class LaunchPad extends Block{
                 deselect();
             }).size(40f);
         }
+
+        @Override
+        public byte version(){
+            return 1;
+        }
+
+        @Override
+        public void write(Writes write){
+            super.write(write);
+            write.f(launchCounter);
+        }
+
+        @Override
+        public void read(Reads read, byte revision){
+            super.read(read, revision);
+            if(revision >= 1){
+                launchCounter = read.f();
+            }
+        }
     }
 
     @EntityDef(LaunchPayloadc.class)
@@ -200,7 +234,7 @@ public class LaunchPad extends Block{
 
             Draw.z(Layer.weather - 1);
 
-            TextureRegion region = Core.atlas.find("launchpod");
+            TextureRegion region = blockOn() instanceof mindustry.world.blocks.campaign.LaunchPad p ? p.podRegion : Core.atlas.find("launchpod");
             float rw = region.width * Draw.scl * scale, rh = region.height * Draw.scl * scale;
 
             Draw.alpha(alpha);

@@ -218,7 +218,7 @@ public class BulletType extends Content implements Cloneable{
             Fires.create(build.tile);
         }
 
-        if(healPercent > 0f && build.team == b.team && !(build.block instanceof ConstructBlock)){
+        if(healPercent > 0f && build.team == b.team && (b.owner == build ? build.block.enableHealSelf : true) && !(build.block instanceof ConstructBlock)){
             Fx.healBlockFull.at(build.x, build.y, build.block.size, Pal.heal);
             build.heal(healPercent / 100f * build.maxHealth);
         }else if(build.team != b.team && direct){

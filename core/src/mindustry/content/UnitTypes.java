@@ -213,10 +213,9 @@ public class UnitTypes{
                 shrinkY = 0f;
                 shrinkInterp = Interp.slope;
 
-                trailChance = 10f / 60f;
+                trailLength = 2;
+                trailWidth = 1;
                 trailColor = Pal.bulletYellowBack;
-                trailEffect = Fx.bulletSparkSmokeTrailSmall;
-                trailSpread = 12f;
                 shootEffect = Fx.shootScepterSecondary;
                 hitEffect = Fx.hitScepterSecondary;
             }};
@@ -246,14 +245,18 @@ public class UnitTypes{
                     shrinkY = 0f;
                     shootEffect = Fx.shootBig;
                     hitEffect = Fx.blastExplosion;
-                    trailParam = 0.5f;
-                    lightning = 2;
+                    trailEffect = Fx.disperseTrail;
+                    trailChance = 0.44f;
+                    trailRotation = true;
+                    lightning = 1;
                     lightningLength = 6;
                     lightningColor = Pal.surge;
                     //standard bullet damage is far too much for lightning
                     lightningDamage = 20;
                     despawnSound = Sounds.shockBullet;
                     bulletInterval = 4f;
+                    intervalAngle = 180;
+                    intervalRandomSpread = 15;
 
                     intervalBullet = new LightningBulletType(){{
                         damage = 5f;
